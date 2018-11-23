@@ -46,6 +46,10 @@ class IncomeService @Inject()(employmentService: EmploymentService,
     incomeRepository.taxCodeIncomes(nino, year)
   }
 
+  def confirmedTaxCodeIncomes(nino: Nino, year: TaxYear)(implicit hc: HeaderCarrier): Future[Seq[TaxCodeIncome]] = {
+    incomeRepository.confirmedTaxCodeIncomes(nino, year)
+  }
+
   def incomes(nino: Nino, year: TaxYear)(implicit hc: HeaderCarrier): Future[Incomes] = {
     incomeRepository.incomes(nino, year)
   }

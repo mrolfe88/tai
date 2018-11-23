@@ -72,6 +72,20 @@ class IncomeRepository @Inject()(taxAccountRepository: TaxAccountRepository,
     }
   }
 
+  def confirmedTaxCodeIncomes(nino: Nino, year: TaxYear)(implicit hc: HeaderCarrier): Future[Seq[TaxCodeIncome]] = {
+    val taxCodeIncomeFuture = taxAccountRepository.confirmedTaxAccount(nino, year) map (_.as[Seq[TaxCodeIncome]](taxCodeIncomeSourcesReads))
+    val iabdDetailsFuture = iabdRepository.iabds(nino, year) map(_.as[Seq[IabdDetails]])
+
+    for {
+      taxCodeIncomes <- taxCodeIncomeFuture
+      iabdDetails <- iabdDetailsFuture
+    } yield {
+      taxCodeIncomes.map { taxCodeIncome =>
+        addIabdDetailsToTaxCodeIncome(iabdDetails, taxCodeIncome)
+      }
+    }
+  }
+
 
   private def addIabdDetailsToTaxCodeIncome(iabdDetails: Seq[IabdDetails], taxCodeIncome: TaxCodeIncome) = {
     val iabdDetail = iabdDetails.find(_.employmentSequenceNumber == taxCodeIncome.employmentId)

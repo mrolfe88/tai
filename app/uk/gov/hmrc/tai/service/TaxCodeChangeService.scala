@@ -42,7 +42,7 @@ class TaxCodeChangeServiceImpl @Inject()(taxCodeChangeConnector: TaxCodeChangeCo
 
       if(validForService(taxCodeHistory.operatedTaxCodeRecords)) {
         taxCodeMismatch(nino).map{ taxCodeMismatch =>
-          !taxCodeMismatch.mismatch
+          !taxCodeMismatch.mismatchUnconfirmedTCH
         }
       }
       else {
@@ -100,15 +100,25 @@ class TaxCodeChangeServiceImpl @Inject()(taxCodeChangeConnector: TaxCodeChangeCo
   }
 
   def taxCodeMismatch(nino: Nino)(implicit hc: HeaderCarrier): Future[TaxCodeMismatch] = {
-    (for {
-      unconfirmedTaxCodes <- incomeService.taxCodeIncomes(nino, TaxYear())
-      confirmedTaxCodes <- taxCodeChange(nino)
-    } yield {
-      val unconfirmedTaxCodeList = unconfirmedTaxCodes.map(taxCodeIncome => taxCodeIncome.taxCode).sorted
-      val confirmedTaxCodeList = confirmedTaxCodes.current.map(_.taxCode).sorted
-      val mismatch = unconfirmedTaxCodeList != confirmedTaxCodeList
 
-      TaxCodeMismatch(mismatch, unconfirmedTaxCodeList , confirmedTaxCodeList)
+    val confirmedTaxCodes = incomeService.confirmedTaxCodeIncomes(nino, TaxYear())
+    val unconfirmedTaxCodes = incomeService.taxCodeIncomes(nino, TaxYear())
+    val taxCodeChanges = taxCodeChange(nino)
+
+    (for {
+      confirmedTaxCodesResults <- confirmedTaxCodes
+      unconfirmedTaxCodesResults <- unconfirmedTaxCodes
+      taxCodeChangeResult <- taxCodeChanges
+    } yield {
+
+      val confirmedTaxCodeList = confirmedTaxCodesResults.map(taxCodeIncome => taxCodeIncome.taxCode).sorted
+      val unconfirmedTaxCodeList = unconfirmedTaxCodesResults.map(taxCodeIncome => taxCodeIncome.taxCode).sorted
+      val taxCodeHistoryList = taxCodeChangeResult.current.map(_.taxCode).sorted
+
+      val confirmedMismatch = confirmedTaxCodeList != taxCodeHistoryList
+      val unconfirmedMismatch = unconfirmedTaxCodeList != taxCodeHistoryList
+
+      TaxCodeMismatch(confirmedMismatch, unconfirmedMismatch, confirmedTaxCodeList, unconfirmedTaxCodeList , taxCodeHistoryList)
     }) recover {
       case exception =>
         Logger.warn(s"Failed to Match for $nino with exception:${exception.getMessage}")
