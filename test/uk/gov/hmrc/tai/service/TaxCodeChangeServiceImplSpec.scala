@@ -26,6 +26,7 @@ import play.api.libs.json.JsResultException
 import uk.gov.hmrc.domain.{Generator, Nino}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.tai.audit.Auditor
+import uk.gov.hmrc.tai.config.FeatureTogglesConfig
 import uk.gov.hmrc.tai.connectors.TaxCodeChangeConnector
 import uk.gov.hmrc.tai.model._
 import uk.gov.hmrc.tai.model.api.{TaxCodeChange, TaxCodeRecordWithEndDate}
@@ -862,7 +863,7 @@ class TaxCodeChangeServiceImplSpec extends PlaySpec with MockitoSugar with TaxCo
         when(incomeService.taxCodeIncomes(any(), any())(any())).thenReturn(Future.successful(taxCodeIncomes))
         when(taxCodeChangeConnector.taxCodeHistory(any(), any(), any())).thenReturn(Future.successful(taxCodeHistory))
 
-        val expectedResult = TaxCodeMismatch(false, Seq("1185L"), Seq("1185L"))
+        val expectedResult = TaxCodeMismatch(None, false, None, Seq("1185L"), Seq("1185L"))
 
         val service: TaxCodeChangeServiceImpl = createService(taxCodeChangeConnector, auditor, incomeService)
         Await.result(service.taxCodeMismatch(nino), 5.seconds) mustEqual expectedResult
@@ -895,7 +896,7 @@ class TaxCodeChangeServiceImplSpec extends PlaySpec with MockitoSugar with TaxCo
         val confirmedTaxCodes = Seq("1185L","1155L","1175L","1195L").sorted
         val unconfirmedTaxCodes = taxCodeIncomes.map(_.taxCode).sorted
 
-        val expectedResult = TaxCodeMismatch(false, unconfirmedTaxCodes , confirmedTaxCodes)
+        val expectedResult = TaxCodeMismatch(None, false, None, unconfirmedTaxCodes , confirmedTaxCodes)
 
         val service: TaxCodeChangeServiceImpl = createService(taxCodeChangeConnector)
         Await.result(service.taxCodeMismatch(nino), 5.seconds) mustEqual expectedResult
@@ -913,7 +914,7 @@ class TaxCodeChangeServiceImplSpec extends PlaySpec with MockitoSugar with TaxCo
         when(incomeService.taxCodeIncomes(any(), any())(any())).thenReturn(Future.successful(taxCodeIncomes))
         when(taxCodeChangeConnector.taxCodeHistory(any(), any(), any())).thenReturn(Future.successful(taxCodeHistory))
 
-        val expectedResult = TaxCodeMismatch(true, Seq("1185L"), Seq())
+        val expectedResult = TaxCodeMismatch(None, true, None, Seq("1185L"), Seq())
 
         val service: TaxCodeChangeServiceImpl = createService(taxCodeChangeConnector, auditor, incomeService)
         Await.result(service.taxCodeMismatch(nino), 5.seconds) mustEqual expectedResult
@@ -933,7 +934,7 @@ class TaxCodeChangeServiceImplSpec extends PlaySpec with MockitoSugar with TaxCo
         when(incomeService.taxCodeIncomes(any(),any())(any())).thenReturn(Future.successful(taxCodeIncomes))
         when(taxCodeChangeConnector.taxCodeHistory(any(), any(), any())).thenReturn(Future.successful(taxCodeHistory))
 
-        val expectedResult = TaxCodeMismatch(true, taxCodeIncomes.map(_.taxCode), Seq("1185L"))
+        val expectedResult = TaxCodeMismatch(None, true, None, taxCodeIncomes.map(_.taxCode), Seq("1185L"))
 
         val service: TaxCodeChangeServiceImpl = createService(taxCodeChangeConnector)
         Await.result(service.taxCodeMismatch(nino), 5.seconds) mustEqual expectedResult
@@ -965,7 +966,7 @@ class TaxCodeChangeServiceImplSpec extends PlaySpec with MockitoSugar with TaxCo
         val confirmedTaxCodes = Seq("1185L","1155L","1175L","1195L").sorted
         val unconfirmedTaxCodes = taxCodeIncomes.map(_.taxCode).sorted
 
-        val expectedResult = TaxCodeMismatch(true, unconfirmedTaxCodes , confirmedTaxCodes)
+        val expectedResult = TaxCodeMismatch(None, true, None, unconfirmedTaxCodes , confirmedTaxCodes)
 
         val service: TaxCodeChangeServiceImpl = createService(taxCodeChangeConnector)
         Await.result(service.taxCodeMismatch(nino), 5.seconds) mustEqual expectedResult
@@ -1023,13 +1024,15 @@ class TaxCodeChangeServiceImplSpec extends PlaySpec with MockitoSugar with TaxCo
   val taxCodeChangeConnector: TaxCodeChangeConnector = mock[TaxCodeChangeConnector]
   val auditor = mock[Auditor]
   val incomeService: IncomeService = mock[IncomeService]
+  val toggleConfig = mock[FeatureTogglesConfig]
 
   private def createService(
                              mockConnector: TaxCodeChangeConnector = taxCodeChangeConnector,
                              mockAuditor: Auditor = auditor,
-                             incomeService: IncomeService = incomeService) = {
+                             incomeService: IncomeService = incomeService,
+                             toggleConfig: FeatureTogglesConfig = toggleConfig) = {
 
-    new TaxCodeChangeServiceImpl(mockConnector, mockAuditor, incomeService)
+    new TaxCodeChangeServiceImpl(mockConnector, mockAuditor, incomeService, toggleConfig)
   }
 
   private def randomNino: Nino = new Generator(new Random).nextNino

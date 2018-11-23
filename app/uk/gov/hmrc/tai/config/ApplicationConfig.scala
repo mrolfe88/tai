@@ -93,4 +93,5 @@ class FeatureTogglesConfig @Inject()(val runModeConfiguration: Configuration, pl
   def desEnabled: Boolean = runModeConfiguration.getBoolean("tai.des.call").getOrElse(false)
   def desUpdateEnabled: Boolean = runModeConfiguration.getBoolean("tai.des.update.call").getOrElse(false)
   def taxCodeChangeEnabled: Boolean = runModeConfiguration.getBoolean("tai.taxCodeChange.enabled").getOrElse(false)
+  def confirmedTaxAccount: Boolean = runModeConfiguration.getBoolean("tai.confirmedTaxAccount.enabled").getOrElse(false)
 }

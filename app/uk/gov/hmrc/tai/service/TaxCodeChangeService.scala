@@ -23,6 +23,7 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.tai.audit.Auditor
+import uk.gov.hmrc.tai.config.FeatureTogglesConfig
 import uk.gov.hmrc.tai.connectors.TaxCodeChangeConnector
 import uk.gov.hmrc.tai.model.{TaxCodeHistory, TaxCodeMismatch, TaxCodeRecord}
 import uk.gov.hmrc.tai.model.api.{TaxCodeChange, TaxCodeRecordWithEndDate}
@@ -34,7 +35,8 @@ import scala.concurrent.Future
 
 class TaxCodeChangeServiceImpl @Inject()(taxCodeChangeConnector: TaxCodeChangeConnector,
                                          auditor: Auditor,
-                                         incomeService: IncomeService) extends TaxCodeChangeService {
+                                         incomeService: IncomeService,
+                                         toggleConfig: FeatureTogglesConfig) extends TaxCodeChangeService {
 
   def hasTaxCodeChanged(nino: Nino)(implicit hc: HeaderCarrier): Future[Boolean] = {
 
@@ -101,28 +103,51 @@ class TaxCodeChangeServiceImpl @Inject()(taxCodeChangeConnector: TaxCodeChangeCo
 
   def taxCodeMismatch(nino: Nino)(implicit hc: HeaderCarrier): Future[TaxCodeMismatch] = {
 
-    val confirmedTaxCodes = incomeService.confirmedTaxCodeIncomes(nino, TaxYear())
-    val unconfirmedTaxCodes = incomeService.taxCodeIncomes(nino, TaxYear())
-    val taxCodeChanges = taxCodeChange(nino)
+    if(toggleConfig.confirmedTaxAccount){
+      val confirmedTaxCodes = incomeService.confirmedTaxCodeIncomes(nino, TaxYear())
+      val unconfirmedTaxCodes = incomeService.taxCodeIncomes(nino, TaxYear())
+      val taxCodeChanges = taxCodeChange(nino)
 
-    (for {
-      confirmedTaxCodesResults <- confirmedTaxCodes
-      unconfirmedTaxCodesResults <- unconfirmedTaxCodes
-      taxCodeChangeResult <- taxCodeChanges
-    } yield {
+      (for {
+        confirmedTaxCodesResults <- confirmedTaxCodes
+        unconfirmedTaxCodesResults <- unconfirmedTaxCodes
+        taxCodeChangeResult <- taxCodeChanges
+      } yield {
 
-      val confirmedTaxCodeList = confirmedTaxCodesResults.map(taxCodeIncome => taxCodeIncome.taxCode).sorted
-      val unconfirmedTaxCodeList = unconfirmedTaxCodesResults.map(taxCodeIncome => taxCodeIncome.taxCode).sorted
-      val taxCodeHistoryList = taxCodeChangeResult.current.map(_.taxCode).sorted
+        val confirmedTaxCodeList = confirmedTaxCodesResults.map(taxCodeIncome => taxCodeIncome.taxCode).sorted
+        val unconfirmedTaxCodeList = unconfirmedTaxCodesResults.map(taxCodeIncome => taxCodeIncome.taxCode).sorted
+        val taxCodeHistoryList = taxCodeChangeResult.current.map(_.taxCode).sorted
 
-      val confirmedMismatch = confirmedTaxCodeList != taxCodeHistoryList
-      val unconfirmedMismatch = unconfirmedTaxCodeList != taxCodeHistoryList
+        val confirmedMismatch = confirmedTaxCodeList != taxCodeHistoryList
+        val unconfirmedMismatch = unconfirmedTaxCodeList != taxCodeHistoryList
 
-      TaxCodeMismatch(confirmedMismatch, unconfirmedMismatch, confirmedTaxCodeList, unconfirmedTaxCodeList , taxCodeHistoryList)
-    }) recover {
-      case exception =>
-        Logger.warn(s"Failed to compare tax codes for $nino with exception:${exception.getMessage}")
-        throw new BadRequestException(exception.getMessage)
+        TaxCodeMismatch(Some(confirmedMismatch), unconfirmedMismatch, Some(confirmedTaxCodeList), unconfirmedTaxCodeList , taxCodeHistoryList)
+      }) recover {
+        case exception =>
+          Logger.warn(s"Failed to compare tax codes for $nino with exception:${exception.getMessage}")
+          throw new BadRequestException(exception.getMessage)
+      }
+    }
+    else {
+      val unconfirmedTaxCodes = incomeService.taxCodeIncomes(nino, TaxYear())
+      val taxCodeChanges = taxCodeChange(nino)
+
+      (for {
+        unconfirmedTaxCodesResults <- unconfirmedTaxCodes
+        taxCodeChangeResult <- taxCodeChanges
+      } yield {
+
+        val unconfirmedTaxCodeList = unconfirmedTaxCodesResults.map(taxCodeIncome => taxCodeIncome.taxCode).sorted
+        val taxCodeHistoryList = taxCodeChangeResult.current.map(_.taxCode).sorted
+
+        val unconfirmedMismatch = unconfirmedTaxCodeList != taxCodeHistoryList
+
+        TaxCodeMismatch(None, unconfirmedMismatch, None, unconfirmedTaxCodeList, taxCodeHistoryList)
+      }) recover {
+        case exception =>
+          Logger.warn(s"Failed to compare tax codes for $nino with exception:${exception.getMessage}")
+          throw new BadRequestException(exception.getMessage)
+      }
     }
   }
 

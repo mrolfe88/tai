@@ -19,9 +19,9 @@ package uk.gov.hmrc.tai.model
 import play.api.libs.json.Json
 
 
-case class TaxCodeMismatch(mismatchConfirmedTCH: Boolean,
+case class TaxCodeMismatch(mismatchConfirmedTCH: Option[Boolean],
                            mismatchUnconfirmedTCH: Boolean,
-                           confirmed: Seq[String],
+                           confirmed: Option[Seq[String]],
                            unconfirmed: Seq[String],
                            taxCodeHistory: Seq[String])
 
