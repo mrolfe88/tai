@@ -258,11 +258,11 @@ class TaxAccountConnector @Inject()(npsConfig: NpsConfig,
           "payAndTax":{
             "totalIncome":{
             "npsDescription":null,
-            "amount":40128.00,
+            "amount":12345.00,
             "type":null,
             "iabdSummaries":[
           {
-            "amount":40128,
+            "amount":54321,  <----- this is the one
             "type":27,
             "npsDescription":"New Estimated Pay",
             "employmentId":8,
