@@ -59,15 +59,18 @@ class NpsConnector @Inject()(metrics: Metrics,
     val urlToRead = npsPathUrl(nino, s"employment/$year")
 
 
-    //if(year == 2018) {
+    if(year == 2018) {
       println(Console.YELLOW +  "Getting employment details for 2018" + Console.WHITE)
       Future.successful(Json.parse(
         """[{"nino":"AA000000","sequenceNumber":8,"payeSchemeType":0,"employerNumber":13297949,"payeSequenceNumber":1,"employmentType":1,"employmentStatus":1,"jobTitle":null,"worksNumber":"031","startingTaxCode":"999L","weekOneMonthOne":1,"receivingJobseekersAllowance":false,"receivingOccupationalPension":false,"director":false,"manualCorrespondence":false,"p161Issued":false,"creationMedia":3,"creationSource":25,"startDateSource":27,"startDate":"23/03/2015","cessationMedia":0,"cessationSource":null,"endDateSource":null,"endDate":null,"taxDistrictNumber":"120","payeNumber":"ABC123","employerName":"Employer 1","otherIncomeSourceIndicator":false,"payrolledTaxYear":false,"payrolledTaxYear1":false,"payrolledBenefitsTaxYear":null,"payrolledBenefitsTaxYear1":null,"cessationPayThisEmployment":null}]"""
       ))
-    //}
-//    else{
+    }
+    else{
 //      getFromNps[JsValue](urlToRead, APITypes.NpsEmploymentAPI).map(_._1)
-//    }
+      Future.successful(Json.parse(
+        """[]"""
+      ))
+    }
   }
 
   def getIabdsForType(nino: Nino, year: Int, iabdType: Int)(implicit hc: HeaderCarrier): Future[List[NpsIabdRoot]] = {
