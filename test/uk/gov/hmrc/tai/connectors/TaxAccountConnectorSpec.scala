@@ -69,27 +69,6 @@ class TaxAccountConnectorSpec extends PlaySpec with WireMockHelper with MockitoS
           result mustBe jsonResponse
         }
 
-
-        "toggled to use non confirmedAPI" must {
-
-          "return Tax Account as Json in the response" in {
-
-            when(featureTogglesConfig.confirmedAPIEnabled).thenReturn(true)
-
-            val url = {
-              val path = new URL(taxAccountURLWithToggleMock.taxAccountUrl(nino, taxYear))
-              s"${path.getPath}"
-            }
-
-            server.stubFor(get(urlEqualTo(url)).willReturn(ok(jsonResponse.toString)))
-
-            val connector = createSUT(featureTogglesConfig = featureTogglesConfig, taxAccountUrls = taxAccountURLWithToggleMock)
-            val result = Await.result(connector.taxAccount(nino, taxYear), 5 seconds)
-
-            result mustBe jsonResponse
-          }
-        }
-
       "updateTaxCodeIncome" must {
 
         "update nps with the new tax code income" in {
@@ -172,28 +151,6 @@ class TaxAccountConnectorSpec extends PlaySpec with WireMockHelper with MockitoS
           val url = {
             val path = new URL(taxAccountURLWithToggleMock.taxAccountUrl(nino, taxYear))
             s"${path.getPath}"
-          }
-
-          server.stubFor(get(urlEqualTo(url)).willReturn(ok(jsonResponse.toString)))
-
-          val connector = createSUT(featureTogglesConfig = featureTogglesConfig, taxAccountUrls = taxAccountURLWithToggleMock)
-          val result = Await.result(connector.taxAccount(nino, taxYear), 5 seconds)
-
-          result mustBe jsonResponse
-        }
-
-      }
-
-      "toggled to use non confirmedAPI" must {
-
-        "return Tax Account as Json in the response" in {
-
-          when(featureTogglesConfig.confirmedAPIEnabled).thenReturn(false)
-          when(featureTogglesConfig.desEnabled).thenReturn(true)
-
-          val url = {
-            val path = new URL(taxAccountURLWithToggleMock.taxAccountUrl(nino, taxYear))
-            s"${path.getPath}?${path.getQuery}"
           }
 
           server.stubFor(get(urlEqualTo(url)).willReturn(ok(jsonResponse.toString)))
