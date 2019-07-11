@@ -140,19 +140,19 @@ abstract class BaseConnector(auditor: Auditor,
             }
           }
           case Status.BAD_REQUEST => {
-            Logger.warn(s"RTIAPI - Bad Request error returned from RTI HODS for $reqNino and url $url")
+            Logger.warn(s"RTIAPI - Bad Request error returned from RTI HODS for url $url")
             Future.successful((None, RtiStatus(res.status, res.body)))
           }
           case Status.NOT_FOUND => {
-            Logger.warn(s"RTIAPI - No DATA Found error returned from RTI HODS for $reqNino and url $url")
+            Logger.warn(s"RTIAPI - No DATA Found error returned from RTI HODS for url $url")
             Future.successful((None, RtiStatus(res.status, res.body)))
           }
           case Status.INTERNAL_SERVER_ERROR => {
-            Logger.warn(s"RTIAPI - Internal Server error returned from RTI HODS for $reqNino for url $url")
+            Logger.warn(s"RTIAPI - Internal Server error returned from RTI HODS for url $url")
             Future.successful((None, RtiStatus(res.status, res.body)))
           }
           case _ => {
-            Logger.warn(s"RTIAPI - An error returned from RTI HODS for $reqNino for url $url")
+            Logger.warn(s"RTIAPI - An error returned from RTI HODS for url $url")
             Future.successful((None, RtiStatus(res.status, res.body)))
           }
         }
